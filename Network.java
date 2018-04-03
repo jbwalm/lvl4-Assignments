@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class Network {
 
-    private List<Integer> param;
+    private List<Float> param;
     private List<String> in;
     private List<String> teach;
 
@@ -14,17 +14,16 @@ public class Network {
     private Node[] layer_two;
     private Node[] layer_three;
 
-    private int epoch_count = 100;
+    private int epoch_count = 2;
 
-    Network(String path, ArrayList<Integer> param, ArrayList<String> in, ArrayList<String> teach){
+    Network(String path, ArrayList<Float> param, ArrayList<String> in, ArrayList<String> teach){
         this.param = param;
         this.in = in;
         this.teach = teach;
-        //System.out.println("Network created\n" + param.toString() + "\n" + in.toString() + "\n" + teach.toString());
 
-        layer_one = new Node[param.get(0)];
-        layer_two = new Node[param.get(1)];
-        layer_three = new Node[param.get(2)];
+        layer_one = new Node[(int)(float) param.get(0)];
+        layer_two = new Node[(int)(float) param.get(1)];
+        layer_three = new Node[(int)(float) param.get(2)];
 
         // builds network using given parameters.
         build_network();
@@ -39,31 +38,30 @@ public class Network {
     private void build_network(){
         int i;
         for (i = 0; i < layer_one.length; i++){
-            layer_one[i] = new Node(layer_two.length);
+            layer_one[i] = new Node(layer_two.length, "input");
         }
         for (i = 0; i < layer_two.length; i++){
-            layer_two[i] = new Node(layer_three.length);
+            layer_two[i] = new Node(layer_three.length, "hidden");
         }
         for (i = 0; i < layer_three.length; i++){
-            layer_three[i] = new Node(0);
+            layer_three[i] = new Node(0, "output");
         }
     }
 
     // Begins of the process of a feed forward network.
     private float run_network(){
-        int wanted_epochs = 100;
         int epoch_count = 0;
         int correct = 0;
 
         // performs so many epochs, 1 epoch is batch learnt.
         Node[][] layers = {layer_one, layer_two, layer_three};
-        while (epoch_count < wanted_epochs){
+        while (epoch_count < this.epoch_count){
             correct += run_epoch(layers);
-            back_prop();
+            // put back prop here to batch learn.
             epoch_count++;
         }
-
-        return (correct/wanted_epochs)/(float) in.size();
+        System.out.println(correct);
+        return (correct/this.epoch_count)/(float) in.size();
     }
     // runs an epoch.
     private int run_epoch(Node[][] layers_in) {
@@ -80,6 +78,9 @@ public class Network {
             }
             // runs a feed forward for this pattern to calculate output.
             correct += feed_forward(layers_in, teach.get(i));
+
+            // online learning, not batch.
+            back_prop(layers_in, teach.get(i));
         }
         return correct;
     }
@@ -90,23 +91,26 @@ public class Network {
         int j;
         int k;
 
-        //each layer
+        //each layer.
         for (i = 0; i < layers.length - 1; i++){
-            //each node in layer
+            //each node in layer.
             for (j = 0; j < layers[i].length; j++){
-                //each forward-weight in node
+                //each forward-weight in node.
                 for (k = 0; k < layers[i][j].weights.length; k++){
-                    layers[i+1][k].sum += (layers[i][j].active() * layers[i][j].weights[k]);
+                    layers[i+1][k].sum += (layers[i][j].function() * layers[i][j].weights[k]);
                 }
                 //every weight for this node has been forward fed, set sum to 0 for next epoch.
-                layers[i][j].sum = 0;
+            }
+            // bias node for loop
+            for (j = 0; j < layers[i+1].length; j++){
+                layers[i+1][j].sum += 1 * layers[i+1][j].bias_weight;
             }
         }
 
         String output = "";
         String sums = "";
         for (Node node : layer_three){
-            output += node.active() + " ";
+            output += (int) node.function() + " ";
             node.sum = 0.0f;
         }
         output = output.substring(0, output.length()-1);
@@ -116,7 +120,30 @@ public class Network {
         return 0;
     }
 
-    private void back_prop(){
+    private void back_prop(Node[][] layers_in, String desired_output){
+        float learning = param.get(3);
+        Node[][] layers = layers_in;
+        String[] desired = desired_output.split("//s+");
+        int i;
+        int j;
+        int k;
+        int l;
+
+        //each layer.
+        for (i = layers.length - 1; i > 0; i--){
+            //each node in layer.
+            for (j = layers[i].length - 1; j >= 0; j--){
+                //each node in previous layer.
+                for (k = 0; k < layers[i-1].length; k++){
+                    //each weight for current node from previous layer
+                    for (l = 0; l < layers[i-1][k].weights.length; l++){
+                        layers[i-1][k].weights[l] += (learning * layers[i][j].error_term(Float.parseFloat(desired[0])) * layers[i-1][k].get_active());
+                    }
+                }
+                // change bias node --> node weight:
+                layers[i][j].bias_weight += learning * layers[i][j].error_term(Float.parseFloat(desired[0])) * 1;
+            }
+        }
         return;
     }
 

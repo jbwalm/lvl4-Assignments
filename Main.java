@@ -11,9 +11,9 @@ public class Main {
 
     private String path;
 
-    private ArrayList<Integer> param = new ArrayList<Integer>();
-    private ArrayList<String> input = new ArrayList<String>();
-    private ArrayList<String> teaching = new ArrayList<String>();
+    private ArrayList<Float> param = new ArrayList<>();
+    private ArrayList<String> input = new ArrayList<>();
+    private ArrayList<String> teaching = new ArrayList<>();
 
     public static void main(String[] args) {
         // Gets local directory of .jar file.
@@ -36,7 +36,7 @@ public class Main {
             FileReader reading = new FileReader(path + "param.txt");
             BufferedReader reader = new BufferedReader(reading);
             while ((line = reader.readLine()) != null) {
-                param.add(Integer.parseInt(line));
+                param.add(Float.parseFloat(line));
             }
 
             reading = new FileReader(path + "in.txt");
