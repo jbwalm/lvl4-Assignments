@@ -14,7 +14,7 @@ public class Network {
     private Node[] layer_two;
     private Node[] layer_three;
 
-    private int epoch_count = 2;
+    private int epoch_count = 100;
 
     Network(String path, ArrayList<Float> param, ArrayList<String> in, ArrayList<String> teach){
         this.param = param;
@@ -100,6 +100,7 @@ public class Network {
                     layers[i+1][k].sum += (layers[i][j].function() * layers[i][j].weights[k]);
                 }
                 //every weight for this node has been forward fed, set sum to 0 for next epoch.
+                layers[i][j].sum = 0;
             }
             // bias node for loop
             for (j = 0; j < layers[i+1].length; j++){
@@ -110,7 +111,12 @@ public class Network {
         String output = "";
         String sums = "";
         for (Node node : layer_three){
-            output += (int) node.function() + " ";
+            if (node.function() > 0.5f) {
+                output += "1 ";
+            }else{
+                output += "0 ";
+            }
+            System.out.println(output + ", " + node.function());
             node.sum = 0.0f;
         }
         output = output.substring(0, output.length()-1);

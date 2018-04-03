@@ -1,6 +1,7 @@
 //package DeltaNetwork;
 
 import java.util.Random;
+import java.lang.Math;
 
 public class Node {
 
@@ -43,12 +44,12 @@ public class Node {
             this.active = this.sum;
             return this.active;
         }else if (type.equals("output")){
-            System.out.println(this.sum);
-            this.active = this.sum;
+            //System.out.println(this.sum);
+            this.active = 1/(1+((float) Math.exp(-1 * this.sum)));
             return this.active;
         }
         // replace this with sigmoid function for hidden layer nodes.
-        this.active = active();
+        this.active = 1/(1+((float) Math.exp(-1 * this.sum)));
 
         return this.active;
 
@@ -59,7 +60,6 @@ public class Node {
 
         if (this.type.equals("output")){
             error = (desired - this.active) * this.active * (1 - this.active);
-            System.out.println("here: " + error + "active: " + this.active);
             return error;
         }
 
