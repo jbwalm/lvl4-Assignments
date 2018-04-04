@@ -2,6 +2,8 @@
 
 import java.util.Random;
 import java.lang.Math;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Node {
 
@@ -9,6 +11,7 @@ public class Node {
     private float active;
     public float[] weights;
     public float bias_weight;
+    public float error_term;
     private String type;
     private Random random = new Random();
 
@@ -18,6 +21,7 @@ public class Node {
         this.active = 0.0f;
         this.weights = new float[weights];
         this.type = type;
+        this.error_term = 0.0f;
 
         float high = 0.3f;
         float low = -0.3f;
@@ -55,18 +59,27 @@ public class Node {
 
     }
 
-    public float error_term(float desired){
+    public float error_term(String[] desired, int j, Node[][] layers){
         float error = 0.0f;
+        List<Float> semi_errors = new ArrayList<>();
+        float semi_error = 0;
 
         if (this.type.equals("output")){
-            error = (desired - this.active) * this.active * (1 - this.active);
+            float desire = Float.parseFloat(desired[j]);
+            error = (desire - this.active) * this.active * (1 - this.active);
+            this.error_term = error;
             return error;
         }
 
-        //error = this.active * (1 - this.active) * (())
+        for (int i = 0; i < this.weights.length; i++){
+            semi_errors.add(layers[2][i].error_term * this.weights[i]);
+        }
+        for (float item : semi_errors){
+            semi_error += item;
+        }
+        error = this.active * (1 - this.active) * semi_error;
+        this.error_term = error;
         return error;
     }
-
-
 
 }

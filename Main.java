@@ -1,7 +1,6 @@
 //package DeltaNetwork;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -21,7 +20,8 @@ public class Main {
             String pre_path = Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
             String path = pre_path.substring(0, pre_path.lastIndexOf("/") + 1);
             Main instance = new Main(path);
-            Network network = new Network(path, instance.param, instance.input, instance.teaching);
+            Data data = new Data(instance.input, instance.teaching);
+            Network network = new Network(path, instance.param, data);
         }catch(URISyntaxException e) {
             e.printStackTrace();
         }

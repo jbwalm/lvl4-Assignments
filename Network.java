@@ -2,9 +2,10 @@
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Arrays;
 
 public class Network {
+
+    private Data data;
 
     private List<Float> param;
     private List<String> in;
@@ -14,12 +15,11 @@ public class Network {
     private Node[] layer_two;
     private Node[] layer_three;
 
-    private int epoch_count = 100;
+    private float epoch_count = 2.0f;
 
-    Network(String path, ArrayList<Float> param, ArrayList<String> in, ArrayList<String> teach){
+    Network(String path, ArrayList<Float> param, Data data){
+        this.data = data;
         this.param = param;
-        this.in = in;
-        this.teach = teach;
 
         layer_one = new Node[(int)(float) param.get(0)];
         layer_two = new Node[(int)(float) param.get(1)];
@@ -29,9 +29,9 @@ public class Network {
         build_network();
 
         // runs the network.
-        float success_rate = run_network();
+        float error_rate = run_network();
 
-        System.out.println("epochs completed: " + epoch_count + ", Success rate: " + success_rate*100 + "%");
+        System.out.println("epochs completed: " + epoch_count + ", Error rate: " + error_rate*100 + "%");
     }
 
     // Builds Each layer with requested number of nodes.
@@ -51,17 +51,23 @@ public class Network {
     // Begins of the process of a feed forward network.
     private float run_network(){
         int epoch_count = 0;
-        int correct = 0;
+        float correct = 0.0f;
+        float error = 100.0f;
 
-        // performs so many epochs, 1 epoch is batch learnt.
         Node[][] layers = {layer_one, layer_two, layer_three};
-        while (epoch_count < this.epoch_count){
+        while (epoch_count < this.epoch_count/** error > this.param[5]*/){
+            correct = 0;
             correct += run_epoch(layers);
+            error = (this.in.size() - correct) / this.in.size();
+            //System.out.println("------");
+            this.data.shuffle();
             // put back prop here to batch learn.
             epoch_count++;
         }
+
         System.out.println(correct);
-        return (correct/this.epoch_count)/(float) in.size();
+
+        return error;
     }
     // runs an epoch.
     private int run_epoch(Node[][] layers_in) {
@@ -71,6 +77,8 @@ public class Network {
         int correct = 0;
 
         // assigns each value in the current patter to an input node.
+        this.in = this.data.get_in();
+        this.teach = this.data.get_teach();
         for (i = 0; i < in.size(); i++) {
             split = in.get(i).split("\\s+");
             for (j = 0; j < split.length; j++) {
@@ -116,7 +124,7 @@ public class Network {
             }else{
                 output += "0 ";
             }
-            System.out.println(output + ", " + node.function());
+            //System.out.println(output + ", " + node.function() + ", " + desired_output);
             node.sum = 0.0f;
         }
         output = output.substring(0, output.length()-1);
@@ -134,20 +142,22 @@ public class Network {
         int j;
         int k;
         int l;
+        float error = 0.0f;
 
         //each layer.
         for (i = layers.length - 1; i > 0; i--){
             //each node in layer.
             for (j = layers[i].length - 1; j >= 0; j--){
+                error = layers[i][j].error_term(desired, j, layers);
                 //each node in previous layer.
                 for (k = 0; k < layers[i-1].length; k++){
                     //each weight for current node from previous layer
                     for (l = 0; l < layers[i-1][k].weights.length; l++){
-                        layers[i-1][k].weights[l] += (learning * layers[i][j].error_term(Float.parseFloat(desired[0])) * layers[i-1][k].get_active());
+                        layers[i-1][k].weights[l] += (learning * error * layers[i-1][k].get_active());
                     }
                 }
                 // change bias node --> node weight:
-                layers[i][j].bias_weight += learning * layers[i][j].error_term(Float.parseFloat(desired[0])) * 1;
+                layers[i][j].bias_weight += learning * error * 1;
             }
         }
         return;
