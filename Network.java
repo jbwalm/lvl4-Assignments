@@ -108,6 +108,7 @@ public class Network {
                     layers[i+1][k].sum += (layers[i][j].function() * layers[i][j].weights[k]);
                 }
                 //every weight for this node has been forward fed, set sum to 0 for next epoch.
+                // why not set this to zero before using a node, states are kept until next run.
                 layers[i][j].sum = 0;
             }
             // bias node for loop
