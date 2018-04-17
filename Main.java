@@ -22,6 +22,13 @@ public class Main {
             Main instance = new Main(path);
             Data data = new Data(instance.input, instance.teaching);
             Network network = new Network(path, instance.param, data);
+
+            // builds network using given parameters.
+            network.build_network();
+            // runs the network.
+            network.run_network("online");
+            //System.out.println("epochs completed: " + epoch_count + ", Error rate: " + error_rate*100 + "%");
+
         }catch(URISyntaxException e) {
             e.printStackTrace();
         }

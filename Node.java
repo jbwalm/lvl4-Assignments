@@ -10,7 +10,9 @@ public class Node {
     public float sum;
     private float active;
     public float[] weights;
+    public float[] previous_changes;
     public float bias_weight;
+    public float bias_weight_change;
     public float error_term;
     private String type;
     private Random random = new Random();
@@ -20,6 +22,7 @@ public class Node {
         this.sum = 0.0f;
         this.active = 0.0f;
         this.weights = new float[weights];
+        this.previous_changes = new float[weights];
         this.type = type;
         this.error_term = 0.0f;
 
@@ -27,33 +30,24 @@ public class Node {
         float low = -0.3f;
         for (i = 0; i < this.weights.length; i++){
             this.weights[i] = random.nextFloat() * (high - low) + low;
+            this.previous_changes[i] = 0.0f;
         }
         this.bias_weight = random.nextFloat() * (high - low) + low;
+        this.bias_weight_change = 0.0f;
     }
 
-    private int active(){
-        if (this.sum > 0.0f){
-            return 1;
-        }
-        return 0;
-    }
 
-    public float get_active(){
+    public float get_active(){ // not needed?
         return this.active;
     }
 
     public float function(){
         // apply function here
-        if (type.equals("input")){
+        if (this.type.equals("input")) {
             this.active = this.sum;
             return this.active;
-        }else if (type.equals("output")){
-            //System.out.println(this.sum);
-            this.active = 1/(1+((float) Math.exp(-1 * this.sum)));
-            return this.active;
         }
-        // replace this with sigmoid function for hidden layer nodes.
-        this.active = 1/(1+((float) Math.exp(-1 * this.sum)));
+        this.active = 1/(1+((float)Math.exp(-1 * this.sum)));
 
         return this.active;
 

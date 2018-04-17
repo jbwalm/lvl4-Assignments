@@ -2,6 +2,7 @@
 
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.Math;
 
 public class Network {
 
@@ -15,7 +16,7 @@ public class Network {
     private Node[] layer_two;
     private Node[] layer_three;
 
-    private float epoch_count = 2.0f;
+    private int finished = 0;
 
     Network(String path, ArrayList<Float> param, Data data){
         this.data = data;
@@ -25,17 +26,10 @@ public class Network {
         layer_two = new Node[(int)(float) param.get(1)];
         layer_three = new Node[(int)(float) param.get(2)];
 
-        // builds network using given parameters.
-        build_network();
-
-        // runs the network.
-        float error_rate = run_network();
-
-        System.out.println("epochs completed: " + epoch_count + ", Error rate: " + error_rate*100 + "%");
     }
 
     // Builds Each layer with requested number of nodes.
-    private void build_network(){
+    public void build_network(){
         int i;
         for (i = 0; i < layer_one.length; i++){
             layer_one[i] = new Node(layer_two.length, "input");
@@ -49,34 +43,57 @@ public class Network {
     }
 
     // Begins of the process of a feed forward network.
-    private float run_network(){
+    public void run_network(String type){
         int epoch_count = 0;
-        float correct = 0.0f;
         float error = 100.0f;
-
         Node[][] layers = {layer_one, layer_two, layer_three};
-        while (epoch_count < this.epoch_count/** error > this.param[5]*/){
-            correct = 0;
-            correct += run_epoch(layers);
-            error = (this.in.size() - correct) / this.in.size();
-            //System.out.println("------");
+
+        // prints out all weights in structure
+        for (int i = 0; i < layers.length-1; i++){
+            for (int j = 0; j < layers[i].length; j++){
+                for (int k = 0; k < layers[i][j].weights.length; k++){
+                    System.out.print(layers[i][j].weights[k] + ", ");
+                }
+                System.out.println("");
+            }
+            System.out.println("-----");
+        }
+        System.out.println(this.param.get(5));
+        while (error > this.param.get(5)){
+            error = run_epoch(layers) / (layers[2].length * in.size());
             this.data.shuffle();
-            // put back prop here to batch learn.
+            /**put back prop here to batch learn.
+            if (type.equals("Batch")){
+                back_prop(???)
+            }*/
+
             epoch_count++;
+            this.finished = epoch_count;
+            if (epoch_count % 100 == 0){
+                System.out.println("Epochs completed: " + epoch_count + ", error: " + error);
+            }
         }
 
-        System.out.println(correct);
+        // prints out all weights, post learning.
+        for (int i = 0; i < layers.length-1; i++){
+            for (int j = 0; j < layers[i].length; j++){
+                for (int k = 0; k < layers[i][j].weights.length; k++){
+                    System.out.print(layers[i][j].weights[k] + ", ");
+                }
+                System.out.println("");
+            }
+            System.out.println("-----");
+        }
 
-        return error;
     }
     // runs an epoch.
-    private int run_epoch(Node[][] layers_in) {
+    private float run_epoch(Node[][] layers_in) {
         String[] split;
         int i;
         int j;
-        int correct = 0;
+        float pattern_errors = 0.0f;
 
-        // assigns each value in the current patter to an input node.
+        // assigns each value in the current pattern to an input node.
         this.in = this.data.get_in();
         this.teach = this.data.get_teach();
         for (i = 0; i < in.size(); i++) {
@@ -85,15 +102,15 @@ public class Network {
                 layer_one[j].sum = Float.parseFloat(split[j]);
             }
             // runs a feed forward for this pattern to calculate output.
-            correct += feed_forward(layers_in, teach.get(i));
+            pattern_errors += feed_forward(layers_in, teach.get(i));
 
             // online learning, not batch.
             back_prop(layers_in, teach.get(i));
         }
-        return correct;
+        return pattern_errors;
     }
 
-    private int feed_forward(Node[][] layers_in, String desired_output){
+    private float feed_forward(Node[][] layers_in, String desired_output){
         Node[][] layers = layers_in;
         int i;
         int j;
@@ -104,12 +121,11 @@ public class Network {
             //each node in layer.
             for (j = 0; j < layers[i].length; j++){
                 //each forward-weight in node.
+                layers[i][j].function();
+                layers[i][j].sum = 0; // set sum to 0 since down with this nodes sum.
                 for (k = 0; k < layers[i][j].weights.length; k++){
-                    layers[i+1][k].sum += (layers[i][j].function() * layers[i][j].weights[k]);
+                    layers[i+1][k].sum += (layers[i][j].get_active() * layers[i][j].weights[k]);
                 }
-                //every weight for this node has been forward fed, set sum to 0 for next epoch.
-                // why not set this to zero before using a node, states are kept until next run.
-                layers[i][j].sum = 0;
             }
             // bias node for loop
             for (j = 0; j < layers[i+1].length; j++){
@@ -117,48 +133,58 @@ public class Network {
             }
         }
 
-        String output = "";
-        String sums = "";
-        for (Node node : layer_three){
-            if (node.function() > 0.5f) {
-                output += "1 ";
-            }else{
-                output += "0 ";
+        //this is all wrong
+        String[] desired = desired_output.split("\\s+");
+        float output = 0.0f;
+        for (i = 0; i < desired.length; i++){
+            layers[2][i].function();
+            output += (float) Math.pow(Double.parseDouble(desired[i]) - (double) layers[2][i].get_active(), 2);
+            if (this.finished == 49999) {
+                System.out.print("(" + layers[2][i].get_active() + ", " + desired[i] + "), ");
             }
-            //System.out.println(output + ", " + node.function() + ", " + desired_output);
-            node.sum = 0.0f;
+            layers[2][i].sum = 0.0f;
         }
-        output = output.substring(0, output.length()-1);
-        if (output.equals(desired_output)){
-            return 1;
+        if (this.finished == 49999) {
+            for (i = 0; i < this.layer_one.length; i ++){
+                System.out.print(this.layer_one[i].get_active() + ", ");
+            }
+            System.out.println("");
         }
-        return 0;
+        return output;
     }
 
     private void back_prop(Node[][] layers_in, String desired_output){
         float learning = param.get(3);
         Node[][] layers = layers_in;
-        String[] desired = desired_output.split("//s+");
+        String[] desired = desired_output.split("\\s+");
         int i;
         int j;
         int k;
         int l;
         float error = 0.0f;
+        float weight_change;
 
         //each layer.
         for (i = layers.length - 1; i > 0; i--){
             //each node in layer.
-            for (j = layers[i].length - 1; j >= 0; j--){
+            for (j = 0; j < layers[i].length; j++){
                 error = layers[i][j].error_term(desired, j, layers);
                 //each node in previous layer.
                 for (k = 0; k < layers[i-1].length; k++){
                     //each weight for current node from previous layer
                     for (l = 0; l < layers[i-1][k].weights.length; l++){
-                        layers[i-1][k].weights[l] += (learning * error * layers[i-1][k].get_active());
+                        weight_change = (learning * error * layers[i-1][k].get_active()) +
+                                (this.param.get(4) * layers[i-1][k].previous_changes[l]);
+
+                        layers[i-1][k].weights[l] += weight_change;
+                        layers[i-1][k].previous_changes[l] = weight_change;
                     }
                 }
                 // change bias node --> node weight:
-                layers[i][j].bias_weight += learning * error * 1;
+                weight_change = (learning * error * 1) +
+                        (layers[i][j].bias_weight_change * this.param.get(4));
+                layers[i][j].bias_weight += weight_change;//learning * error * 1;
+                layers[i][j].bias_weight_change = weight_change;
             }
         }
         return;
