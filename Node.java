@@ -47,7 +47,7 @@ public class Node {
             this.active = this.sum;
             return this.active;
         }
-        this.active = 1/(1+((float)Math.exp(-1 * this.sum)));
+        this.active = 1/(1+((float)Math.exp( -1 * this.sum)));
 
         return this.active;
 
@@ -64,7 +64,6 @@ public class Node {
             this.error_term = error;
             return error;
         }
-
         for (int i = 0; i < this.weights.length; i++){
             semi_errors.add(layers[2][i].error_term * this.weights[i]);
         }
