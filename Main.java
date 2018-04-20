@@ -23,6 +23,13 @@ public class Main {
             Data data = new Data(instance.input, instance.teaching);
             Network network = new Network(path, instance.param, data);
 
+            /**
+             * text menu here? can call network methods.
+             * eg: build network --> reinitialize
+             * --> Network network = new Network(...); --> build --> run
+             */
+
+
             // builds network using given parameters.
             network.build_network();
             // runs the network.

@@ -18,8 +18,11 @@ public class Network {
     private Node[] layer_two;
     private Node[] layer_three;
 
+    private ArrayList<String> correct_check = new ArrayList<>();
+
     private int finished = 0;
 
+    // Initializes a network instance, creating node layers with n nodes.
     Network(String path, ArrayList<Float> param, Data data){
         this.data = data;
         this.param = param;
@@ -50,44 +53,28 @@ public class Network {
         float error = 100.0f;
         Node[][] layers = {layer_one, layer_two, layer_three};
 
-        // prints out all weights in structure
-        for (int i = 0; i < layers.length-1; i++){
-            for (int j = 0; j < layers[i].length; j++){
-                for (int k = 0; k < layers[i][j].weights.length; k++){
-                    System.out.print(layers[i][j].weights[k] + ", ");
-                }
-                System.out.print("bias: " + layers[i][j].bias_weight);
-                System.out.println("");
-            }
-            System.out.println("-----");
-        }
 
-        while (/**error > this.param.get(5)*/epoch_count<50001){
+        while (error > this.param.get(5)){
+            this.correct_check.clear();
             error = run_epoch(layers) / (layers[2].length * in.size());
             this.data.shuffle();
-            /**put back prop here to batch learn.
-            if (type.equals("Batch")){
-                back_prop(???)
-            }*/
+
+            /**
+             * put back prop here to batch learn.
+             * if (type.equals("Batch")){
+             * back_prop(???)
+             * }
+             */
 
             epoch_count++;
             this.finished = epoch_count;
-            //System.out.println("--------------------------");
             if (epoch_count % 10 == 0){
                 System.out.println("Epochs completed: " + epoch_count + ", error: " + error);
             }
         }
 
-        // prints out all weights, post learning.
-        for (int i = 0; i < layers.length-1; i++){
-            for (int j = 0; j < layers[i].length; j++){
-                for (int k = 0; k < layers[i][j].weights.length; k++){
-                    System.out.print(layers[i][j].weights[k] + ", ");
-                }
-                System.out.print("bias: " + layers[i][j].bias_weight);
-                System.out.println("");
-            }
-            System.out.println("-----");
+        for (String item : this.correct_check){
+            System.out.println(item);
         }
 
     }
@@ -107,13 +94,11 @@ public class Network {
                 layer_one[j].sum = Float.parseFloat(split[j]);
             }
             // runs a feed forward for this pattern to calculate output.
-            //System.out.println("---------pattern forward: " + i);
+
             pattern_errors += feed_forward(layers_in, teach.get(i));
-            //System.out.println("---------feedforward done");
+
             // online learning, not batch.
-            //System.out.println("---------pattern backprop: " + i);
             back_prop(layers_in, teach.get(i));
-            //System.out.println("---------backprop done");
         }
         return pattern_errors;
     }
@@ -130,48 +115,60 @@ public class Network {
             //each node in layer.
             for (j = 0; j < layers[i].length; j++){
                 layers[i][j].function();
-                //System.out.println("active: " + layers[i][j].get_active() + "  sum: " + layers[i][j].sum);
-                layers[i][j].sum = 0; // set sum to 0 since down with this nodes sum.
+                layers[i][j].sum = 0;
+
                 //each forward-weight in node.
-                //System.out.print("Changes: ");
                 for (k = 0; k < layers[i][j].weights.length; k++){
                     change = (layers[i][j].get_active() * layers[i][j].weights[k]);
-                    //System.out.print(layers[i][j].weights[k] + "--> " + change + ", ");
                     layers[i+1][k].sum += change;
                 }
-                //System.out.println("");
             }
+
             // bias node for loop
-            //System.out.print("Bias weights: ");
             for (j = 0; j < layers[i+1].length; j++){
                 change = (1 * layers[i+1][j].bias_weight);
-                //System.out.print(layers[i+1][j].bias_weight + "--> " + change + ", ");
                 layers[i+1][j].sum += change;
             }
-            //System.out.println("");
-            //System.out.println("_-_");
+
         }
 
-        //System.out.println("");
+        String oput = "";
         String[] desired = desired_output.split("\\s+");
         float output = 0.0f;
         for (i = 0; i < desired.length; i++){
             layers[2][i].function();
-            //System.out.println("output node: ");
-            //System.out.println("sum: " + layers[2][i].sum + ", activation:" + layers[2][i].get_active() + ", bias: " + layers[2][i].bias_weight);
             layers[2][i].sum = 0.0f;
             output += (float) Math.pow(Double.parseDouble(desired[i]) - (double) layers[2][i].get_active(), 2);
 
-            if (this.finished == 50000) {
-                System.out.print("(" + layers[2][i].get_active() + ", " + desired[i] + "), ");
+            // checking output against what should of got:
+            float o = 0.0f;
+            if (layers[2][i].get_active() >= 0.5){
+                o = 1.0f;
+            }else{
+                o = 0.0f;
             }
+            oput += o + " ";
+
         }
-        if (this.finished == 50000) {
-            for (i = 0; i < this.layer_one.length; i ++){
-                System.out.print(this.layer_one[i].get_active() + ", ");
+
+        oput = oput.substring(0, oput.length()-1);
+        String[] oput2;
+        if (desired_output.length() < 7){
+            System.out.println("here");
+            oput2 = oput.split("\\s+");
+            oput = "";
+            for (String item : oput2){
+                oput += Integer.parseInt(item) + " ";
             }
-            System.out.println("");
+            oput = oput.substring(0, oput.length()-1);
         }
+        if (oput.equals(desired_output)){
+            this.correct_check.add("correct");
+        }else{
+            this.correct_check.add(oput +" , " + desired_output);
+            //this.correct_check.add("wrong");
+        }
+
         return output;
     }
 
@@ -193,21 +190,12 @@ public class Network {
                 error = layers[i][j].error_term(desired, j, layers);
                 //each node in previous layer.
                 for (k = 0; k < layers[i-1].length; k++){
+
                     weight_change = (learning * error * layers[i-1][k].get_active()) +
                             (this.param.get(4) * layers[i-1][k].previous_changes[j]);
 
                     layers[i-1][k].weights[j] += weight_change;
                     layers[i-1][k].previous_changes[j] = weight_change;
-                    //each weight for current node from previous layer
-                    /**
-                    for (l = 0; l < layers[i-1][k].weights.length; l++){
-                        weight_change = (learning * error * layers[i-1][k].get_active()) +
-                                (this.param.get(4) * layers[i-1][k].previous_changes[l]);
-
-                        layers[i-1][k].weights[l] += weight_change;
-                        layers[i-1][k].previous_changes[l] = weight_change;
-                    }
-                     */
                 }
                 // change bias node --> node weight:
                 weight_change = (learning * error * 1) +
