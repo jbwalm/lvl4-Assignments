@@ -20,9 +20,17 @@ public class Network {
 
     private ArrayList<String> correct_check = new ArrayList<>();
 
+    private float required_error = 0.0f;
+
     private int finished = 0;
 
+    public boolean blank = false;
+
     // Initializes a network instance, creating node layers with n nodes.
+    Network(){
+        this.blank = true;
+    }
+
     Network(String path, ArrayList<Float> param, Data data){
         this.data = data;
         this.param = param;
@@ -48,35 +56,78 @@ public class Network {
     }
 
     // Begins of the process of a feed forward network.
-    public void run_network(String type){
-        int epoch_count = 0;
-        float error = 100.0f;
+    public float run_network(String type, boolean full, boolean criterion){
+        if (this.blank){
+            System.out.println("Cannot run, you have not initialised the network.\n" +
+                    "Please initialise the network");
+            return 0.0f;
+        }
+
+        boolean found = false;
+        int epoch_count = this.finished;
+        int epoch_wanted = epoch_count + 1;
+        if (!full){
+            epoch_wanted = epoch_count + 100;
+        }
+        float error;
+        if (this.required_error == 0){
+            error = 100.0f;
+        }else{
+            error = this.required_error;
+            found = true;
+        }
+
         Node[][] layers = {layer_one, layer_two, layer_three};
 
-
-        while (error > this.param.get(5)){
+        int check_count = 0;
+        while (error > this.param.get(5) & epoch_wanted > epoch_count){
             this.correct_check.clear();
             error = run_epoch(layers) / (layers[2].length * in.size());
-            this.data.shuffle();
 
+            // gets the required error criterion when all is correct
+            if (!found){
+                check_count = 0;
+                for (String item : this.correct_check){
+                    if (item.equals("correct")){
+                        check_count += 1;
+                    }
+                }
+                if (check_count == this.correct_check.size()){
+                    this.required_error = error;
+                    found = true;
+                }
+            }
+            if (criterion && this.required_error > 0){
+                break;
+            }
             /**
              * put back prop here to batch learn.
              * if (type.equals("Batch")){
              * back_prop(???)
              * }
              */
-
+            if (full){
+                epoch_wanted += 1;
+            }
             epoch_count++;
             this.finished = epoch_count;
-            if (epoch_count % 10 == 0){
+            if ((full && epoch_count % 100 == 0 || (!full && (epoch_count % 10 == 0))) && !criterion){
                 System.out.println("Epochs completed: " + epoch_count + ", error: " + error);
             }
         }
-
-        for (String item : this.correct_check){
-            System.out.println(item);
+        if (error < this.param.get(5)) {
+            int correct = 0;
+            for (String item : this.correct_check) {
+                if (item.equals("correct")){
+                    correct += 1;
+                }
+            }
+            if (!criterion) {
+                System.out.println("\n" + correct + " correct out of " + this.correct_check.size() + " patterns.");
+                System.out.println("Required error criterion: " + this.required_error);
+            }
         }
-
+        return this.required_error;
     }
     // runs an epoch.
     private float run_epoch(Node[][] layers_in) {
@@ -148,17 +199,16 @@ public class Network {
                 o = 0.0f;
             }
             oput += o + " ";
-
         }
 
+        // correct_check preparing
         oput = oput.substring(0, oput.length()-1);
         String[] oput2;
-        if (desired_output.length() < 7){
-            System.out.println("here");
+        if (desired_output.length() != oput.length()){
             oput2 = oput.split("\\s+");
             oput = "";
             for (String item : oput2){
-                oput += Integer.parseInt(item) + " ";
+                oput += ((int) Float.parseFloat(item)) + " ";
             }
             oput = oput.substring(0, oput.length()-1);
         }
@@ -205,6 +255,21 @@ public class Network {
             }
         }
         return;
+    }
+
+    public void weights(){
+        Node[][] layers = {layer_one, layer_two, layer_three};
+        // layers
+        for (int i = 0; i < layers.length-1; i++){
+            System.out.println("Weight layer: " + (i+1));
+            // nodes
+            for (int j = 0; j < layers[i].length; j++){
+                System.out.println("Weights from node: " + (j+1));
+                // all weights for node
+                System.out.println(Arrays.toString(layers[i][j].weights) + "\n");
+            }
+            System.out.println("-----------------");
+        }
     }
 
 }
