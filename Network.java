@@ -21,6 +21,7 @@ public class Network {
     private ArrayList<String> correct_check = new ArrayList<>();
 
     private float required_error = 0.0f;
+    private float curr_error = 0.0f;
 
     private int finished = 0;
 
@@ -57,12 +58,6 @@ public class Network {
 
     // Begins of the process of a feed forward network.
     public float run_network(String type, boolean full, boolean criterion){
-        if (this.blank){
-            System.out.println("Cannot run, you have not initialised the network.\n" +
-                    "Please initialise the network");
-            return 0.0f;
-        }
-
         boolean found = false;
         int epoch_count = this.finished;
         int epoch_wanted = epoch_count + 1;
@@ -73,8 +68,11 @@ public class Network {
         if (this.required_error == 0){
             error = 100.0f;
         }else{
-            error = this.required_error;
+            error = this.curr_error;
             found = true;
+        }
+        if (criterion){
+            this.param.set(5, 0.0f);
         }
 
         Node[][] layers = {layer_one, layer_two, layer_three};
@@ -82,7 +80,7 @@ public class Network {
         int check_count = 0;
         while (error > this.param.get(5) & epoch_wanted > epoch_count){
             this.correct_check.clear();
-            error = run_epoch(layers) / (layers[2].length * in.size());
+            error = run_epoch(layers, false) / (layers[2].length * in.size());
 
             // gets the required error criterion when all is correct
             if (!found){
@@ -109,6 +107,9 @@ public class Network {
             if (full){
                 epoch_wanted += 1;
             }
+            if (epoch_count == 50000 && criterion){
+                return 10.0f;
+            }
             epoch_count++;
             this.finished = epoch_count;
             if ((full && epoch_count % 100 == 0 || (!full && (epoch_count % 10 == 0))) && !criterion){
@@ -127,14 +128,19 @@ public class Network {
                 System.out.println("Required error criterion: " + this.required_error);
             }
         }
+        this.curr_error = error;
         return this.required_error;
     }
     // runs an epoch.
-    private float run_epoch(Node[][] layers_in) {
+    public float run_epoch(Node[][] layers_in, boolean test) {
         String[] split;
         int i;
         int j;
         float pattern_errors = 0.0f;
+
+        if(test){
+            this.correct_check.clear();
+        }
 
         // assigns each value in the current pattern to an input node.
         this.in = this.data.get_in();
@@ -149,8 +155,22 @@ public class Network {
             pattern_errors += feed_forward(layers_in, teach.get(i));
 
             // online learning, not batch.
-            back_prop(layers_in, teach.get(i));
+            if (!test) {
+                back_prop(layers_in, teach.get(i));
+            }
         }
+
+        if(test){
+            int correct = 0;
+            for (String item : this.correct_check) {
+                if (item.equals("correct")){
+                    correct += 1;
+                }
+            }
+            System.out.println("\n" + correct + " correct out of " + this.correct_check.size() + " patterns.");
+            System.out.println("Test error: " + (pattern_errors / (layers_in[2].length * in.size())));
+        }
+
         return pattern_errors;
     }
 
@@ -270,6 +290,11 @@ public class Network {
             }
             System.out.println("-----------------");
         }
+    }
+
+    public Node[][] get_layers(){
+        Node[][] layers ={layer_one, layer_two, layer_three};
+        return layers;
     }
 
 }

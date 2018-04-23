@@ -48,25 +48,38 @@ public class Main {
                         network = new Network(path, instance.param, data);
                         network.build_network();
                         break;
+
                     case 2:
                         // teach for 100 epochs
-                        network.run_network("online", false, false);
-                        System.out.println("");
+                        if (network.blank){
+                            System.out.println(bad_init);
+                        }else{
+                            network.run_network("online", false, false);
+                            System.out.println("");
+                        }
                         break;
+
                     case 3:
                         // teach to criterion
-                        network.run_network("online", true, false);
-                        System.out.println("");
+                        if (network.blank){
+                            System.out.println(bad_init);
+                        }else{
+                            network.run_network("online", true, false);
+                            System.out.println("");
+                        }
                         break;
+
                     case 4:
                         // Test network
                         if (network.blank){
                             System.out.println(bad_init);
                         }else{
-
+                            Node[][] layers = network.get_layers();
+                            network.run_epoch(layers, true);
                         }
                         System.out.println("");
                         break;
+
                     case 5:
                         // ouput weights
                         if (network.blank){
@@ -76,6 +89,7 @@ public class Main {
                         }
                         System.out.println("");
                         break;
+
                     case 6:
                         // Estimate criterion
                         System.out.print("Choosing this option will re-initialise your network, 1 = yes, 0 = no\nContinue? ");
@@ -94,6 +108,8 @@ public class Main {
                                 crit_temp = network.run_network("online", true, true);
                                 if (crit_temp < crit) {
                                     crit = crit_temp;
+                                }else if (crit_temp == 10.0f){
+                                    i -= 1;
                                 }
                             }
                             if (crit != 10.0f) {
@@ -103,6 +119,7 @@ public class Main {
                             }
                         }
                         break;
+
                     case 7:
                         // show menu
                         System.out.println(menu);
