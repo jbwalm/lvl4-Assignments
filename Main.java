@@ -64,7 +64,10 @@ public class Main {
                         if (network.blank){
                             System.out.println(bad_init);
                         }else{
-                            network.run_network("online", true, false);
+                            float result = network.run_network("online", true, false);
+                            if (result == 1.0f){
+                                System.out.println("Could not reach criterion");
+                            }
                             System.out.println("");
                         }
                         break;
@@ -126,13 +129,6 @@ public class Main {
                         break;
                 }
             }
-
-
-            // builds network using given parameters.
-            //network.build_network();
-            // runs the network.
-            //network.run_network("online");
-            //System.out.println("epochs completed: " + epoch_count + ", Error rate: " + error_rate*100 + "%");
 
         }catch(URISyntaxException e) {
             e.printStackTrace();
