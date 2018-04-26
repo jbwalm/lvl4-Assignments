@@ -107,20 +107,21 @@ public class Network {
             if (full){
                 epoch_wanted += 1;
             }
-            if (epoch_count == 20000 && criterion){
+            if (epoch_count == 25000 && criterion){
                 return 10.0f;
             }
             epoch_count++;
-            if (full && epoch_count == 20000){
+            if (full && epoch_count == 25000){
                 return 1.0f;
             }
             this.finished = epoch_count;
-            if ((full && epoch_count % 100 == 0 || (!full && (epoch_count % 10 == 0))) && !criterion){
+            /**if ((full && epoch_count % 100 == 0 || (!full && (epoch_count % 10 == 0))) && !criterion){
                 System.out.println("Epochs completed: " + epoch_count + ", error: " + error);
-            }
+            }*/
         }
         if (full && !criterion){
             System.out.println("\nEpochs completed: " + epoch_count + ", error: " + error);
+
         }
         if (error < this.param.get(5)) {
             int correct = 0;
@@ -130,12 +131,13 @@ public class Network {
                 }
             }
             if (!criterion) {
-                System.out.println("\n" + correct + " correct out of " + this.correct_check.size() + " patterns.");
-                System.out.println("Required error criterion for all correct: " + this.required_error);
+                //System.out.println("\n" + correct + " correct out of " + this.correct_check.size() + " patterns.");
+                //System.out.println("Required error criterion for all correct: " + this.required_error);
             }
         }
         this.curr_error = error;
-        return this.required_error;
+        return (float) epoch_count;
+        //return this.required_error;
     }
     // runs an epoch.
     public float run_epoch(Node[][] layers_in, boolean test) {

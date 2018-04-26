@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Scanner;
-
+import java.lang.Math;
 public class Main {
 
     private String path;
@@ -126,6 +126,57 @@ public class Main {
                     case 7:
                         // show menu
                         System.out.println(menu);
+                        break;
+                    case 8:
+                        // testing learn rate, momentum rate
+                        Float[] floats = {0.5f, 0.6f, 0.7f, 0.8f, 0.9f};
+                        Integer results = 0;
+
+                        if (network.blank){
+                            System.out.println(bad_init);
+                        }else{
+                            for (int i = 0; i < floats.length; i++) {
+                                ArrayList<Float> epochs = new ArrayList<>();
+                                Float epoch_tot = 0.0f;
+
+                                instance = new Main(path);
+                                data = new Data(instance.input, instance.teaching);
+                                instance.param.set(4, floats[i]);
+                                network = new Network(path, instance.param, data);
+                                network.build_network();
+                                for (int j = 0; j < 50; j++) {
+                                    instance = new Main(path);
+                                    data = new Data(instance.input, instance.teaching);
+                                    network = new Network(path, instance.param, data);
+                                    network.build_network();
+                                    float result = network.run_network("online", true, false);
+                                    if (result == 1.0f) {
+                                        //System.out.println("Could not reach criterion");
+                                        results += 0;
+                                    } else {
+                                        results += 1;
+                                        epochs.add(result);
+                                        epoch_tot += result;
+                                    }
+                                }
+                                float ave = epoch_tot/epochs.size();
+                                float sd_tot = 0.0f;
+                                ArrayList<Float> sds = new ArrayList<>();
+                                for (Float item : epochs){
+                                    float temp = ((item - ave) * (item - ave));
+                                    sds.add(temp);
+                                    sd_tot+= temp;
+                                }
+                                float sd = (float) Math.sqrt((sd_tot/sds.size()));
+                                System.out.println(results.toString() + ", Epoch ave: " + ave + ", sd: " + sd);
+
+                                results = 0;
+                                epochs.clear();
+                                epoch_tot = 0.0f;
+                                sds.clear();
+                                sd_tot = 0;
+                            }
+                        }
                         break;
                 }
             }
