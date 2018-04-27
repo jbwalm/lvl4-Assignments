@@ -1,6 +1,5 @@
 //package DeltaNetwork;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,7 +80,7 @@ public class Network {
         while (error > this.param.get(5) & epoch_wanted > epoch_count){
             this.correct_check.clear();
             error = run_epoch(layers, false) / (layers[2].length * in.size());
-
+            //System.out.println(error);
             // gets the required error criterion when all is correct
             if (!found){
                 check_count = 0;
@@ -107,21 +106,23 @@ public class Network {
             if (full){
                 epoch_wanted += 1;
             }
-            if (epoch_count == 20000 && criterion){
+            if (epoch_count == 25000 && criterion){
                 return 10.0f;
             }
             epoch_count++;
-            if (full && epoch_count == 20000){
+            if (full && epoch_count == 25000){
                 return 1.0f;
             }
             this.finished = epoch_count;
-            if ((full && epoch_count % 100 == 0 || (!full && (epoch_count % 10 == 0))) && !criterion){
+            /**if ((full && epoch_count % 100 == 0 || (!full && (epoch_count % 10 == 0))) && !criterion){
                 System.out.println("Epochs completed: " + epoch_count + ", error: " + error);
-            }
+            }*/
         }
         if (full && !criterion){
-            System.out.println("\nEpochs completed: " + epoch_count + ", error: " + error);
+            //System.out.println("\nEpochs completed: " + epoch_count + ", error: " + error);
+
         }
+
         if (error < this.param.get(5)) {
             int correct = 0;
             for (String item : this.correct_check) {
@@ -130,12 +131,13 @@ public class Network {
                 }
             }
             if (!criterion) {
-                System.out.println("\n" + correct + " correct out of " + this.correct_check.size() + " patterns.");
-                System.out.println("Required error criterion for all correct: " + this.required_error);
+                //System.out.println("\n" + correct + " correct out of " + this.correct_check.size() + " patterns.");
+                //System.out.println("Required error criterion for all correct: " + this.required_error);
             }
         }
         this.curr_error = error;
-        return this.required_error;
+        return (float) epoch_count;
+        //return this.required_error;
     }
     // runs an epoch.
     public float run_epoch(Node[][] layers_in, boolean test) {
@@ -149,21 +151,36 @@ public class Network {
         }
 
         // assigns each value in the current pattern to an input node.
+        data.shuffle();
         this.in = this.data.get_in();
         this.teach = this.data.get_teach();
-        for (i = 0; i < in.size(); i++) {
-            split = in.get(i).split("\\s+");
-            for (j = 0; j < split.length; j++) {
-                layer_one[j].sum = Float.parseFloat(split[j]);
-            }
-            // runs a feed forward for this pattern to calculate output.
+        if (!test) {
+            for (i = 0; i < in.size(); i++) {
+                split = in.get(i).split("\\s+");
+                for (j = 0; j < split.length; j++) {
+                    layer_one[j].sum = Float.parseFloat(split[j]);
+                }
+                // runs a feed forward for this pattern to calculate output.
 
-            pattern_errors += feed_forward(layers_in, teach.get(i));
+                feed_forward(layers_in, teach.get(i), false);
 
-            // online learning, not batch.
-            if (!test) {
-                back_prop(layers_in, teach.get(i));
+                // online learning, not batch.
+                //if (!test) {
+                    back_prop(layers_in, teach.get(i));
+                //}
             }
+        }
+
+        if ((this.finished+1) % 100 == 0 || test) {
+            for (i = 0; i < in.size(); i++) {
+                split = in.get(i).split("\\s+");
+                for (j = 0; j < split.length; j++) {
+                    layer_one[j].sum = Float.parseFloat(split[j]);
+                }
+                pattern_errors += feed_forward(layers_in, teach.get(i), true);
+            }
+        }else{
+            pattern_errors = layers_in[2].length * in.size();
         }
 
         if(test){
@@ -180,7 +197,7 @@ public class Network {
         return pattern_errors;
     }
 
-    private float feed_forward(Node[][] layers_in, String desired_output){
+    private float feed_forward(Node[][] layers_in, String desired_output, boolean error){
         Node[][] layers = layers_in;
         float change;
         int i;
@@ -228,21 +245,23 @@ public class Network {
         }
 
         // correct_check preparing
-        oput = oput.substring(0, oput.length()-1);
-        String[] oput2;
-        if (desired_output.length() != oput.length()){
-            oput2 = oput.split("\\s+");
-            oput = "";
-            for (String item : oput2){
-                oput += ((int) Float.parseFloat(item)) + " ";
+        if(error) {
+            oput = oput.substring(0, oput.length() - 1);
+            String[] oput2;
+            if (desired_output.length() != oput.length()) {
+                oput2 = oput.split("\\s+");
+                oput = "";
+                for (String item : oput2) {
+                    oput += ((int) Float.parseFloat(item)) + " ";
+                }
+                oput = oput.substring(0, oput.length() - 1);
             }
-            oput = oput.substring(0, oput.length()-1);
-        }
-        if (oput.equals(desired_output)){
-            this.correct_check.add("correct");
-        }else{
-            this.correct_check.add(oput +" , " + desired_output);
-            //this.correct_check.add("wrong");
+            if (oput.equals(desired_output)) {
+                this.correct_check.add("correct");
+            } else {
+                this.correct_check.add(oput + " , " + desired_output);
+                //this.correct_check.add("wrong");
+            }
         }
 
         return output;
